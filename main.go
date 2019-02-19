@@ -165,10 +165,11 @@ func getComics(idx string, cIdx *comicIdx) {
 
 func getIdxWindow(idx string) (int, int) {
 	var n int
-	latest, err := getLatest()
+	c, err := getXkcdComic(0)
 	if err != nil {
 		log.Fatalf("Unable to get latest xkcd comic number: %s", err)
 	}
+	latest := c.Num
 
 	if idx != "all" {
 		n, err = strconv.Atoi(idx)
@@ -181,16 +182,6 @@ func getIdxWindow(idx string) (int, int) {
 	}
 
 	return latest, n
-}
-
-func getLatest() (int, error) {
-	latest, err := getXkcdComic(0)
-	if err != nil {
-		return -1, err
-	}
-
-	log.Printf("Latest comic number is %v", latest.Num)
-	return latest.Num, nil
 }
 
 func getXkcdComic(idx int) (comic, error) {
