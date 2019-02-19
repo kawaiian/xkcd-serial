@@ -57,12 +57,13 @@ func main() {
 	comm := args[0]
 	switch comm {
 	case "index":
-		log.Printf("the current command is %s with last index %s\n", comm, args[1])
-		// TODO: Break apart the current logic to determine the request index and the actual request
-		getComics(args[1], &comIdx)
+		idx := args[1]
+		log.Printf("the current command is 'index' with last index '%s'\n", idx)
+
+		getComics(idx, &comIdx)
 	case "search":
-		log.Printf("the current command is %s with url %s\n", comm, args[1])
 		phrase := args[1]
+		log.Printf("the current command is 'search' with search phrase '%s'\n", phrase)
 
 		cList, err := comIdx.search(phrase)
 		if err != nil {
@@ -90,6 +91,8 @@ func getArgs() ([]string, error) {
 	if len(args) > 2 {
 		return nil, errors.New("too many arguments supplied")
 	} else if args[0] == "index" {
+		// If the index command is called with no number,
+		// default to only indexing the latest comic (i.e. the last '1' comics)
 		if len(args) == 1 {
 			args = append(args, "1")
 		} else {
@@ -137,25 +140,10 @@ func dumpIdx(cIdx *comicIdx) error {
 }
 
 // TODO: This is serial, and inefficient
+// ideally should be asynchronous or concurrent
 func getComics(idx string, cIdx *comicIdx) {
-	var n int
 
-	// TODO: Take this section that calculates the index and place it in its own code
-	latest, err := getLatest()
-	if err != nil {
-		log.Fatalf("Unable to get latest xkcd comic number: %s", err)
-	}
-
-	if idx != "all" {
-		n, err = strconv.Atoi(idx)
-		if err != nil {
-			log.Fatalf("invalid value for index: %v", n)
-		}
-		n = n - 1
-	} else {
-		n = latest
-	}
-	// TODO: See note above
+	latest, n := getIdxWindow(idx)
 
 	for i := latest; i >= latest-n; i-- {
 		log.Printf("Getting comic %v...", i)
@@ -173,6 +161,26 @@ func getComics(idx string, cIdx *comicIdx) {
 			log.Printf("Comic already indexed.")
 		}
 	}
+}
+
+func getIdxWindow(idx string) (int, int) {
+	var n int
+	latest, err := getLatest()
+	if err != nil {
+		log.Fatalf("Unable to get latest xkcd comic number: %s", err)
+	}
+
+	if idx != "all" {
+		n, err = strconv.Atoi(idx)
+		if err != nil {
+			log.Fatalf("invalid value for index: %v", n)
+		}
+		n = n - 1
+	} else {
+		n = latest
+	}
+
+	return latest, n
 }
 
 func getLatest() (int, error) {
